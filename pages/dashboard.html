@@ -202,6 +202,23 @@
       max-width: 140px;
     }
     .inline-edit:focus { outline: none; border-color: var(--gold); }
+    .fgrp { margin-bottom: 12px; }
+    .flbl { display: block; font-size: 11px; color: var(--fg3); letter-spacing: .5px; margin-bottom: 4px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; overflow-y: auto; }
+    .modal { background: var(--bgcard); border: 1px solid var(--line); border-radius: 14px; padding: 24px; max-width: 620px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .modal-title { font-family: var(--serif); font-size: 20px; }
+    .modal-close { background: none; border: none; color: var(--fg3); cursor: pointer; font-size: 24px; padding: 4px 8px; line-height: 1; }
+    .modal-close:hover { color: var(--fg); }
+    .amenity-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(130px,1fr)); gap: 6px; padding: 8px; background: var(--bgel); border-radius: 8px; }
+    .amenity-grid label { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 8px; background: var(--bginput); border-radius: 6px; font-size: 11px; }
+    .ut-card { background: var(--bgel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ut-card-info { flex: 1; min-width: 0; }
+    .ut-card-name { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+    .ut-card-meta { font-size: 11px; color: var(--fg3); }
+    .ut-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    details summary { cursor: pointer; font-size: 12px; color: var(--gold); user-select: none; padding: 4px 0; }
+    details summary:hover { opacity: .8; }
   </style>
 </head>
 <body>
@@ -300,6 +317,98 @@
     </div>
   </div>
 
+  <!-- Unit Type Modal -->
+  <div class="modal-overlay" id="unitTypeModal" style="display:none;" onclick="if(event.target===this)closeUtModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="utModalTitle">Add unit type</div>
+        <button class="modal-close" onclick="closeUtModal()">×</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div class="fgrp" style="grid-column:1/3;">
+          <span class="flbl">Type name *</span>
+          <input type="text" id="utName" class="input" placeholder="e.g. 2 Bedroom"/>
+        </div>
+        <div class="fgrp">
+          <span class="flbl">How many units</span>
+          <input type="number" id="utCount" class="input" min="1" max="999" placeholder="e.g. 5"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+        <div class="fgrp">
+          <span class="flbl">Bedrooms</span>
+          <input type="number" id="utBeds" class="input" min="0" placeholder="e.g. 2"/>
+        </div>
+        <div class="fgrp">
+          <span class="flbl">Bathrooms</span>
+          <input type="number" id="utBaths" class="input" min="0" step="0.5" placeholder="e.g. 1"/>
+        </div>
+        <div class="fgrp">
+          <span class="flbl">Rent (KES) *</span>
+          <input type="number" id="utRent" class="input" min="0" placeholder="e.g. 15000"/>
+        </div>
+        <div class="fgrp">
+          <span class="flbl">Deposit (KES)</span>
+          <input type="number" id="utDeposit" class="input" min="0" placeholder="e.g. 30000"/>
+        </div>
+      </div>
+      <div class="fgrp">
+        <span class="flbl">Description (optional)</span>
+        <textarea id="utDesc" class="input" rows="2" placeholder="What makes this unit special?"></textarea>
+      </div>
+
+      <div style="border-top:1px solid var(--line);margin:14px 0 12px;"></div>
+
+      <details id="utDetails">
+        <summary>Add more details <span style="font-size:10px;color:var(--fg3);">(optional — floor, amenities, utilities)</span></summary>
+        <div style="padding-top:14px;">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="fgrp">
+              <span class="flbl">Floor / Position</span>
+              <input type="text" id="utFloor" class="input" placeholder="e.g. Ground, 2nd Floor"/>
+            </div>
+            <div class="fgrp">
+              <span class="flbl">Square Feet</span>
+              <input type="number" id="utSqft" class="input" min="0" placeholder="e.g. 450"/>
+            </div>
+          </div>
+
+          <div class="fgrp">
+            <span class="flbl">Furnishing</span>
+            <select id="utFurnishing" class="input">
+              <option value="unfurnished">Unfurnished</option>
+              <option value="semi_furnished">Semi-furnished</option>
+              <option value="furnished">Fully furnished</option>
+            </select>
+          </div>
+
+          <div class="fgrp">
+            <span class="flbl">Amenities</span>
+            <div class="amenity-grid" id="utAmenities"></div>
+          </div>
+
+          <div class="fgrp">
+            <span class="flbl">House Rules (optional)</span>
+            <textarea id="utHouseRules" class="input" rows="2" placeholder="e.g. No smoking, Pets allowed with deposit"></textarea>
+          </div>
+
+        </div>
+      </details>
+
+      <div id="utErr" style="color:#f87171;font-size:12px;margin-top:8px;display:none;"></div>
+
+      <div style="border-top:1px solid var(--line);padding-top:16px;margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeUtModal()">Cancel</button>
+        <button class="btn" id="utSaveBtn">
+          <span class="btxt">Save Unit Type</span>
+          <div class="spin"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
@@ -312,6 +421,88 @@
     var selectedProperty = null
     var unitTypes = []
     var previewUnits = []
+    var _utEditingIdx = -1
+
+    var AMENITY_OPTIONS = [
+      {key:'wifi',label:'WiFi'},{key:'parking',label:'Parking'},{key:'security',label:'Security'},
+      {key:'water_24_7',label:'Water 24/7'},{key:'borehole',label:'Borehole'},{key:'cctv',label:'CCTV'},
+      {key:'gym',label:'Gym'},{key:'pool',label:'Pool'},{key:'lift',label:'Lift'},
+      {key:'backup_power',label:'Backup Power'},{key:'gated',label:'Gated'},{key:'laundry',label:'Laundry'},
+      {key:'kitchen_appliances',label:'Kitchen Appliances'},{key:'balcony',label:'Balcony'}
+    ]
+
+    function renderAmenityChoices(selected) {
+      selected = selected || []
+      var grid = document.getElementById('utAmenities')
+      if (!grid) return
+      grid.innerHTML = AMENITY_OPTIONS.map(function(a) {
+        return '<label>'
+          + '<input type="checkbox" value="' + a.key + '" ' + (selected.indexOf(a.key) !== -1 ? 'checked' : '') + ' style="cursor:pointer;accent-color:var(--gold);"/>'
+          + a.label + '</label>'
+      }).join('')
+    }
+
+    function getSelectedAmenities() {
+      return Array.from(document.querySelectorAll('#utAmenities input:checked')).map(function(cb) { return cb.value })
+    }
+
+    function openUtModal(idx) {
+      _utEditingIdx = (idx === undefined || idx === null) ? -1 : idx
+      var ut = _utEditingIdx >= 0 ? unitTypes[_utEditingIdx] : null
+      document.getElementById('utModalTitle').textContent = ut ? 'Edit unit type' : 'Add unit type'
+      document.getElementById('utName').value = ut ? ut.label : ''
+      document.getElementById('utCount').value = ut ? ut.count : ''
+      document.getElementById('utBeds').value = ut ? (ut.bedrooms != null ? ut.bedrooms : '') : ''
+      document.getElementById('utBaths').value = ut ? (ut.bathrooms != null ? ut.bathrooms : '') : ''
+      document.getElementById('utRent').value = ut ? (ut.monthly_rent || '') : ''
+      document.getElementById('utDeposit').value = ut ? (ut.deposit_amount || '') : ''
+      document.getElementById('utDesc').value = ut ? (ut.description || '') : ''
+      document.getElementById('utFloor').value = ut ? (ut.floor || '') : ''
+      document.getElementById('utSqft').value = ut ? (ut.sqft || '') : ''
+      document.getElementById('utFurnishing').value = ut ? (ut.furnishing || 'unfurnished') : 'unfurnished'
+      document.getElementById('utHouseRules').value = ut ? (ut.house_rules || '') : ''
+      renderAmenityChoices(ut ? (ut.amenities || []) : [])
+      var errEl = document.getElementById('utErr')
+      errEl.textContent = ''
+      errEl.style.display = 'none'
+      document.getElementById('unitTypeModal').style.display = 'flex'
+    }
+
+    function closeUtModal() {
+      document.getElementById('unitTypeModal').style.display = 'none'
+    }
+
+    document.getElementById('utSaveBtn').onclick = function() {
+      var errEl = document.getElementById('utErr')
+      errEl.style.display = 'none'
+      var name = document.getElementById('utName').value.trim()
+      var count = parseInt(document.getElementById('utCount').value) || 0
+      var rent = parseFloat(document.getElementById('utRent').value) || 0
+      if (!name) { errEl.textContent = 'Type name is required.'; errEl.style.display = 'block'; return }
+      if (count < 1) { errEl.textContent = 'Enter at least 1 unit.'; errEl.style.display = 'block'; return }
+      if (!rent) { errEl.textContent = 'Monthly rent is required.'; errEl.style.display = 'block'; return }
+      var ut = {
+        label: name,
+        count: count,
+        bedrooms: document.getElementById('utBeds').value !== '' ? parseInt(document.getElementById('utBeds').value) : null,
+        bathrooms: document.getElementById('utBaths').value !== '' ? parseFloat(document.getElementById('utBaths').value) : null,
+        monthly_rent: rent,
+        deposit_amount: parseFloat(document.getElementById('utDeposit').value) || null,
+        description: document.getElementById('utDesc').value.trim() || null,
+        floor: document.getElementById('utFloor').value.trim() || null,
+        sqft: parseFloat(document.getElementById('utSqft').value) || null,
+        furnishing: document.getElementById('utFurnishing').value,
+        amenities: getSelectedAmenities(),
+        house_rules: document.getElementById('utHouseRules').value.trim() || null
+      }
+      if (_utEditingIdx >= 0) {
+        Object.assign(unitTypes[_utEditingIdx], ut)
+      } else {
+        unitTypes.push(ut)
+      }
+      closeUtModal()
+      renderUnitTypes()
+    }
 
     function showToast(msg, type) {
       var wrap = document.getElementById('toastWrap')
@@ -402,13 +593,7 @@
       if (!selectedProperty) return
       document.getElementById('propNameLabel').textContent = selectedProperty.name
       document.getElementById('step2Title').textContent = 'Unit types — ' + selectedProperty.name
-      unitTypes = [
-        { label: 'Bedsitter', count: 0 },
-        { label: '1 Bedroom', count: 0 },
-        { label: '2 Bedroom', count: 0 },
-        { label: '3 Bedroom', count: 0 }
-      ]
-      renderUnitTypes()
+      if (unitTypes.length === 0) renderUnitTypes()
       showStep(2)
     }
 
@@ -416,29 +601,26 @@
     function renderUnitTypes() {
       var list = document.getElementById('unitTypesList')
       if (unitTypes.length === 0) {
-        list.innerHTML = '<div style="color:var(--fg3);font-size:13px;padding:12px 0;">No unit types yet. Add one below.</div>'
+        list.innerHTML = '<div style="color:var(--fg3);font-size:13px;padding:14px 0;">No unit types yet. Click "+ Add unit type" to start.</div>'
         return
       }
       list.innerHTML = unitTypes.map(function(ut, i) {
-        return '<div class="unit-type-row">'
-          + '<div class="unit-type-row-content">'
-          +   '<div class="unit-type-name"><input class="inline-edit" value="' + esc(ut.label) + '" onchange="unitTypes[' + i + '].label=this.value" placeholder="e.g. 2 Bedroom"/></div>'
-          +   '<div class="unit-type-count" style="display:flex;align-items:center;gap:6px;">'
-          +     '<button onclick="changeCount(' + i + ',-1)" style="background:var(--bgel);border:1px solid var(--line);color:var(--fg);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:15px;line-height:1;">−</button>'
-          +     '<input class="unit-type-input" type="number" min="0" max="999" value="' + ut.count + '" onchange="unitTypes[' + i + '].count=Math.max(0,parseInt(this.value)||0);this.value=unitTypes[' + i + '].count"/>'
-          +     '<button onclick="changeCount(' + i + ',1)" style="background:var(--bgel);border:1px solid var(--line);color:var(--fg);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:15px;line-height:1;">+</button>'
-          +   '</div>'
+        var meta = []
+        if (ut.bedrooms != null) meta.push(ut.bedrooms + ' bed')
+        if (ut.bathrooms != null) meta.push(ut.bathrooms + ' bath')
+        if (ut.monthly_rent) meta.push('KES ' + Number(ut.monthly_rent).toLocaleString() + '/mo')
+        if (ut.floor) meta.push(ut.floor)
+        return '<div class="ut-card">'
+          + '<div class="ut-card-info">'
+          +   '<div class="ut-card-name">' + esc(ut.label) + ' <span style="font-family:var(--sans);font-size:12px;color:var(--gold);font-weight:400;">× ' + ut.count + '</span></div>'
+          +   (meta.length ? '<div class="ut-card-meta">' + meta.join(' · ') + '</div>' : '')
           + '</div>'
-          + '<div style="flex-shrink:0;">'
+          + '<div class="ut-card-actions">'
+          +   '<button onclick="openUtModal(' + i + ')" style="background:transparent;border:1px solid var(--gold);color:var(--gold);font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;">Edit</button>'
           +   '<button onclick="removeUnitType(' + i + ')" style="background:transparent;border:1px solid rgba(248,113,113,0.35);color:#f87171;font-size:14px;font-weight:400;padding:4px 10px;border-radius:6px;cursor:pointer;min-width:32px;line-height:1;" title="Remove">×</button>'
           + '</div>'
           + '</div>'
       }).join('')
-    }
-
-    function changeCount(i, delta) {
-      unitTypes[i].count = Math.max(0, (unitTypes[i].count || 0) + delta)
-      renderUnitTypes()
     }
 
     function removeUnitType(i) {
@@ -447,8 +629,7 @@
     }
 
     document.getElementById('addUnitTypeBtn').onclick = function() {
-      unitTypes.push({ label: '', count: 0 })
-      renderUnitTypes()
+      openUtModal(null)
     }
 
     document.getElementById('step2Back').onclick = function() { showStep(1) }
