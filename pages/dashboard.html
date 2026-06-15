@@ -390,6 +390,16 @@
           </div>
 
           <div class="fgrp">
+            <span class="flbl">Photos (optional)</span>
+            <div style="background:var(--bgel);border:1.5px dashed var(--line2);border-radius:10px;padding:14px;text-align:center;">
+              <button type="button" id="utAddPhotosBtn" style="background:var(--gold);color:#000;border:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ Add Photos</button>
+              <input type="file" id="utPhotoInput" accept="image/*" multiple style="display:none;"/>
+              <div style="font-size:10px;color:var(--fg3);margin-top:6px;">First photo is the cover. Applies to all units of this type.</div>
+            </div>
+            <div id="utPhotoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-top:8px;"></div>
+          </div>
+
+          <div class="fgrp">
             <span class="flbl">House Rules (optional)</span>
             <textarea id="utHouseRules" class="input" rows="2" placeholder="e.g. No smoking, Pets allowed with deposit"></textarea>
           </div>
@@ -422,6 +432,7 @@
     var unitTypes = []
     var previewUnits = []
     var _utEditingIdx = -1
+    var _utPhotoFiles = []   // File objects staged in modal
 
     var AMENITY_OPTIONS = [
       {key:'wifi',label:'WiFi'},{key:'parking',label:'Parking'},{key:'security',label:'Security'},
@@ -446,6 +457,55 @@
       return Array.from(document.querySelectorAll('#utAmenities input:checked')).map(function(cb) { return cb.value })
     }
 
+    function renderUtPhotoGrid() {
+      var grid = document.getElementById('utPhotoGrid')
+      if (!grid) return
+      if (!_utPhotoFiles.length) { grid.innerHTML = ''; return }
+      grid.innerHTML = _utPhotoFiles.map(function(item, idx) {
+        var src = typeof item === 'string' ? item : URL.createObjectURL(item)
+        return '<div style="position:relative;aspect-ratio:1;border-radius:7px;overflow:hidden;background:var(--bgel);border:1px solid var(--line);">'
+          + '<img src="' + src + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;"/>'
+          + '<button type="button" onclick="removeUtPhoto(' + idx + ')" style="position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;">×</button>'
+          + (idx === 0 ? '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:var(--gold);font-size:8px;letter-spacing:1px;padding:2px;text-align:center;">COVER</div>' : '')
+          + '</div>'
+      }).join('')
+    }
+
+    function removeUtPhoto(idx) {
+      _utPhotoFiles.splice(idx, 1)
+      renderUtPhotoGrid()
+    }
+
+    function wireUtPhotoPicker() {
+      var btn = document.getElementById('utAddPhotosBtn')
+      var input = document.getElementById('utPhotoInput')
+      if (!btn || !input) return
+      btn.onclick = function() { input.click() }
+      input.onchange = function(e) {
+        var files = Array.from(e.target.files || [])
+        files.forEach(function(file) {
+          if (!file.type.startsWith('image/')) return
+          if (file.size > 10 * 1024 * 1024) { showToast(file.name + ' is too large (max 10MB)', 'error'); return }
+          _utPhotoFiles.push(file)
+        })
+        input.value = ''
+        renderUtPhotoGrid()
+      }
+    }
+
+    async function uploadUtPhotos(typeLabel) {
+      var urls = []
+      for (var i = 0; i < _utPhotoFiles.length; i++) {
+        var item = _utPhotoFiles[i]
+        if (typeof item === 'string') { urls.push(item); continue }
+        var ext = (item.name.split('.').pop() || 'jpg').toLowerCase()
+        var path = currentUser.id + '/onboard/' + selectedProperty.id + '/' + typeLabel.replace(/\s+/g,'_') + '_' + Date.now() + '_' + i + '.' + ext
+        var res = await sb.storage.from('property-images').upload(path, item, { upsert: false })
+        if (!res.error) urls.push(sb.storage.from('property-images').getPublicUrl(path).data.publicUrl)
+      }
+      return urls
+    }
+
     function openUtModal(idx) {
       _utEditingIdx = (idx === undefined || idx === null) ? -1 : idx
       var ut = _utEditingIdx >= 0 ? unitTypes[_utEditingIdx] : null
@@ -462,6 +522,9 @@
       document.getElementById('utFurnishing').value = ut ? (ut.furnishing || 'unfurnished') : 'unfurnished'
       document.getElementById('utHouseRules').value = ut ? (ut.house_rules || '') : ''
       renderAmenityChoices(ut ? (ut.amenities || []) : [])
+      _utPhotoFiles = ut ? (ut._photoFiles || []).slice() : []
+      renderUtPhotoGrid()
+      setTimeout(wireUtPhotoPicker, 30)
       var errEl = document.getElementById('utErr')
       errEl.textContent = ''
       errEl.style.display = 'none'
@@ -493,7 +556,8 @@
         sqft: parseFloat(document.getElementById('utSqft').value) || null,
         furnishing: document.getElementById('utFurnishing').value,
         amenities: getSelectedAmenities(),
-        house_rules: document.getElementById('utHouseRules').value.trim() || null
+        house_rules: document.getElementById('utHouseRules').value.trim() || null,
+        _photoFiles: _utPhotoFiles.slice()
       }
       if (_utEditingIdx >= 0) {
         Object.assign(unitTypes[_utEditingIdx], ut)
@@ -690,6 +754,18 @@
       btn.classList.add('loading')
       btn.disabled = true
 
+      // Upload photos per unit type first (once per type, not per unit)
+      var typePhotoUrls = {}
+      for (var ti = 0; ti < unitTypes.length; ti++) {
+        var ut = unitTypes[ti]
+        if (ut._photoFiles && ut._photoFiles.length) {
+          _utPhotoFiles = ut._photoFiles
+          typePhotoUrls[ti] = await uploadUtPhotos(ut.label)
+        } else {
+          typePhotoUrls[ti] = []
+        }
+      }
+
       var rows = previewUnits.map(function(u, idx) {
         return {
           property_id: selectedProperty.id,
@@ -697,7 +773,8 @@
           unit_type: u.type,
           floor: u.floor || null,
           status: u.is_occupied ? 'rented' : 'available',
-          availability_status: u.is_occupied ? 'occupied' : 'vacant'
+          availability_status: u.is_occupied ? 'occupied' : 'vacant',
+          images: typePhotoUrls[u.typeIdx] || []
         }
       })
 
