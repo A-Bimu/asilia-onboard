@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <title>Asilia Onboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="pages/shared/styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="text-align:center;max-width:520px;">
+      <div style="font-family:var(--serif);font-size:52px;color:var(--gold);margin-bottom:6px;letter-spacing:-1px;">Asilia</div>
+      <div style="font-size:11px;color:var(--fg3);letter-spacing:3px;margin-bottom:40px;">ONBOARDING SUITE</div>
+
+      <div style="font-family:var(--serif);font-size:26px;margin-bottom:14px;color:var(--fg);">Bring your tenants online</div>
+      <div style="font-size:14px;color:var(--fg3);line-height:1.8;margin-bottom:36px;">
+        Already managing a property with existing tenants?<br/>
+        Set up your units, add your tenants, and send them<br/>
+        invite links to activate their Asilia accounts.
+      </div>
+
+      <button id="getStartedBtn" class="btn" style="font-size:15px;padding:14px 32px;">
+        Get Started
+      </button>
+
+      <div style="font-size:11px;color:var(--fg3);margin-top:24px;">
+        Already have an Asilia account? <a href="pages/login.html" style="color:var(--gold);text-decoration:none;">Sign in →</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://lwsxjmowjvazoqbaizjr.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_bWjhlmrvLi9B66qZHnA2cA_NesgU_Ob'
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    sb.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        window.location.href = 'pages/dashboard.html'
+      }
+    })
+
+    document.getElementById('getStartedBtn').onclick = function() {
+      window.location.href = 'pages/login.html'
+    }
+  </script>
+</body>
+</html>
