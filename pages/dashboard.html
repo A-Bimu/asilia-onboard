@@ -404,6 +404,84 @@
             <textarea id="utHouseRules" class="input" rows="2" placeholder="e.g. No smoking, Pets allowed with deposit"></textarea>
           </div>
 
+          <div style="border-top:1px solid var(--line);margin:14px 0 10px;"></div>
+          <div style="font-size:11px;color:var(--gold);letter-spacing:1.5px;margin-bottom:6px;">PAYMENT &amp; UTILITIES</div>
+          <div style="font-size:11px;color:var(--fg3);margin-bottom:12px;">Required for occupied units. Leave blank for vacant ones (fill in later).</div>
+
+          <div class="fgrp">
+            <span class="flbl">M-Pesa Till Number</span>
+            <input type="text" id="utTill" class="input" placeholder="e.g. 5678910"/>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="fgrp">
+              <span class="flbl">Or Paybill</span>
+              <input type="text" id="utPaybill" class="input" placeholder="e.g. 174379"/>
+            </div>
+            <div class="fgrp">
+              <span class="flbl">Paybill Account</span>
+              <input type="text" id="utPaybillAcc" class="input" placeholder="Account number"/>
+            </div>
+          </div>
+          <div class="fgrp">
+            <span class="flbl">Or Send Money Phone</span>
+            <input type="text" id="utPhone" class="input" placeholder="e.g. 0712345678"/>
+          </div>
+
+          <div style="border-top:1px solid var(--line);margin:12px 0 10px;"></div>
+
+          <div class="fgrp">
+            <span class="flbl">Water</span>
+            <select id="utWaterMode" onchange="onUtWaterChange()" class="input">
+              <option value="flat">Flat monthly amount</option>
+              <option value="metered">Per unit (metered)</option>
+              <option value="prepaid">Prepaid (tenant manages)</option>
+              <option value="landlord">Included (landlord pays)</option>
+            </select>
+            <div id="utWaterFlat" style="margin-top:8px;">
+              <input type="number" id="utWaterAmount" class="input" placeholder="KES per month" min="0"/>
+            </div>
+            <div id="utWaterMetered" style="margin-top:8px;display:none;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <input type="number" id="utWaterUnitPrice" class="input" placeholder="KES per unit" min="0" step="0.01"/>
+                <select id="utWaterUnitType" class="input">
+                  <option value="liter">per Liter</option>
+                  <option value="m3">per m³</option>
+                  <option value="unit">per Unit</option>
+                </select>
+              </div>
+            </div>
+            <input type="text" id="utWaterAccount" class="input" style="margin-top:8px;" placeholder="Water account (optional)"/>
+          </div>
+
+          <div class="fgrp">
+            <span class="flbl">Electricity</span>
+            <select id="utElecMode" class="input">
+              <option value="prepaid">Prepaid meter (KPLC)</option>
+              <option value="flat">Flat monthly amount</option>
+              <option value="metered">Per kWh (metered)</option>
+              <option value="landlord">Included (landlord pays)</option>
+            </select>
+          </div>
+
+          <div class="fgrp">
+            <span class="flbl">Garbage</span>
+            <select id="utGarbageMode" class="input">
+              <option value="flat">Flat monthly amount</option>
+              <option value="landlord">Included (landlord pays)</option>
+              <option value="tenant_arranges">Tenant arranges directly</option>
+            </select>
+            <input type="number" id="utGarbageAmount" class="input" style="margin-top:8px;" placeholder="KES per month (if flat)" min="0"/>
+          </div>
+
+          <div class="fgrp">
+            <span class="flbl">Internet</span>
+            <select id="utInternetMode" class="input">
+              <option value="tenant_arranges">Tenant arranges own</option>
+              <option value="flat">Landlord provides — flat amount</option>
+              <option value="landlord">Landlord provides — included</option>
+            </select>
+          </div>
+
         </div>
       </details>
 
@@ -493,6 +571,12 @@
       }
     }
 
+    function onUtWaterChange() {
+      var mode = document.getElementById('utWaterMode').value
+      document.getElementById('utWaterFlat').style.display = mode === 'flat' ? 'block' : 'none'
+      document.getElementById('utWaterMetered').style.display = mode === 'metered' ? 'block' : 'none'
+    }
+
     async function uploadUtPhotos(typeLabel) {
       var urls = []
       for (var i = 0; i < _utPhotoFiles.length; i++) {
@@ -525,6 +609,21 @@
       _utPhotoFiles = ut ? (ut._photoFiles || []).slice() : []
       renderUtPhotoGrid()
       setTimeout(wireUtPhotoPicker, 30)
+      // Payment & utilities
+      document.getElementById('utTill').value = ut ? (ut.mpesa_till || '') : ''
+      document.getElementById('utPaybill').value = ut ? (ut.mpesa_paybill || '') : ''
+      document.getElementById('utPaybillAcc').value = ut ? (ut.mpesa_paybill_account || '') : ''
+      document.getElementById('utPhone').value = ut ? (ut.mpesa_phone || '') : ''
+      document.getElementById('utWaterMode').value = ut ? (ut.water_pricing_mode || 'flat') : 'flat'
+      document.getElementById('utWaterAmount').value = ut ? (ut.water_amount_kes || '') : ''
+      document.getElementById('utWaterUnitPrice').value = ut ? (ut.water_unit_price || '') : ''
+      document.getElementById('utWaterUnitType').value = ut ? (ut.water_unit_type || 'unit') : 'unit'
+      document.getElementById('utWaterAccount').value = ut ? (ut.water_account || '') : ''
+      document.getElementById('utElecMode').value = ut ? (ut.electricity_pricing_mode || 'prepaid') : 'prepaid'
+      document.getElementById('utGarbageMode').value = ut ? (ut.garbage_pricing_mode || 'flat') : 'flat'
+      document.getElementById('utGarbageAmount').value = ut ? (ut.garbage_amount_kes || '') : ''
+      document.getElementById('utInternetMode').value = ut ? (ut.internet_pricing_mode || 'tenant_arranges') : 'tenant_arranges'
+      onUtWaterChange()
       var errEl = document.getElementById('utErr')
       errEl.textContent = ''
       errEl.style.display = 'none'
@@ -557,7 +656,21 @@
         furnishing: document.getElementById('utFurnishing').value,
         amenities: getSelectedAmenities(),
         house_rules: document.getElementById('utHouseRules').value.trim() || null,
-        _photoFiles: _utPhotoFiles.slice()
+        _photoFiles: _utPhotoFiles.slice(),
+        // Payment & utilities
+        mpesa_till: document.getElementById('utTill').value.trim() || null,
+        mpesa_paybill: document.getElementById('utPaybill').value.trim() || null,
+        mpesa_paybill_account: document.getElementById('utPaybillAcc').value.trim() || null,
+        mpesa_phone: document.getElementById('utPhone').value.trim() || null,
+        water_pricing_mode: document.getElementById('utWaterMode').value,
+        water_amount_kes: parseFloat(document.getElementById('utWaterAmount').value) || 0,
+        water_unit_price: parseFloat(document.getElementById('utWaterUnitPrice').value) || 0,
+        water_unit_type: document.getElementById('utWaterUnitType').value,
+        water_account: document.getElementById('utWaterAccount').value.trim() || null,
+        electricity_pricing_mode: document.getElementById('utElecMode').value,
+        garbage_pricing_mode: document.getElementById('utGarbageMode').value,
+        garbage_amount_kes: parseFloat(document.getElementById('utGarbageAmount').value) || 0,
+        internet_pricing_mode: document.getElementById('utInternetMode').value
       }
       if (_utEditingIdx >= 0) {
         Object.assign(unitTypes[_utEditingIdx], ut)
@@ -767,6 +880,7 @@
       }
 
       var rows = previewUnits.map(function(u, idx) {
+        var ut = unitTypes[u.typeIdx] || {}
         return {
           property_id: selectedProperty.id,
           unit_number: u.number || ('Unit ' + (idx + 1)),
@@ -774,7 +888,29 @@
           floor: u.floor || null,
           status: u.is_occupied ? 'rented' : 'available',
           availability_status: u.is_occupied ? 'occupied' : 'vacant',
-          images: typePhotoUrls[u.typeIdx] || []
+          images: typePhotoUrls[u.typeIdx] || [],
+          bedrooms: ut.bedrooms != null ? ut.bedrooms : null,
+          bathrooms: ut.bathrooms != null ? ut.bathrooms : null,
+          monthly_rent: ut.monthly_rent || null,
+          deposit_amount: ut.deposit_amount || null,
+          description: ut.description || null,
+          square_feet: ut.sqft || null,
+          furnishing: ut.furnishing || null,
+          amenities: ut.amenities && ut.amenities.length ? ut.amenities : null,
+          house_rules: ut.house_rules || null,
+          mpesa_till: ut.mpesa_till || null,
+          mpesa_paybill: ut.mpesa_paybill || null,
+          mpesa_paybill_account: ut.mpesa_paybill_account || null,
+          mpesa_phone: ut.mpesa_phone || null,
+          water_pricing_mode: ut.water_pricing_mode || 'flat',
+          water_amount_kes: ut.water_amount_kes || 0,
+          water_unit_price: ut.water_unit_price || 0,
+          water_unit_type: ut.water_unit_type || 'unit',
+          water_account: ut.water_account || null,
+          electricity_pricing_mode: ut.electricity_pricing_mode || 'prepaid',
+          garbage_pricing_mode: ut.garbage_pricing_mode || 'flat',
+          garbage_amount_kes: ut.garbage_amount_kes || 0,
+          internet_pricing_mode: ut.internet_pricing_mode || 'tenant_arranges'
         }
       })
 
