@@ -261,7 +261,11 @@
     <!-- Step 3: Generate units -->
     <div id="step3" style="display:none;">
       <div class="section-title">Generate units</div>
-      <div class="section-sub">Review and name each unit, then generate them in Asilia.</div>
+      <div class="section-sub">Review and name each unit. Tick <strong>Occupied</strong> for units that already have a tenant living in them.</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;" onclick="markAllOccupied(true)">Mark all occupied</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;" onclick="markAllOccupied(false)">Mark all vacant</button>
+      </div>
       <div class="card" style="margin-bottom:20px;padding:0 16px;">
         <table class="units-table">
           <thead>
@@ -269,7 +273,7 @@
               <th>UNIT NUMBER / NAME</th>
               <th>TYPE</th>
               <th>FLOOR</th>
-              <th>STATUS</th>
+              <th style="text-align:center;">OCCUPIED?</th>
             </tr>
           </thead>
           <tbody id="unitsPreviewBody"></tbody>
@@ -463,14 +467,15 @@
     function buildPreview() {
       previewUnits = []
       var counter = 1
-      unitTypes.forEach(function(ut) {
+      unitTypes.forEach(function(ut, typeIdx) {
         if (!ut.count || !ut.label) return
         for (var i = 0; i < ut.count; i++) {
           previewUnits.push({
             number: 'Unit ' + counter,
             type: ut.label,
-            floor: '',
-            status: 'vacant'
+            typeIdx: typeIdx,
+            floor: ut.floor || '',
+            is_occupied: false
           })
           counter++
         }
@@ -485,9 +490,16 @@
           + '<td><input class="inline-edit" style="max-width:160px;" value="' + esc(u.number) + '" onchange="previewUnits[' + i + '].number=this.value" placeholder="e.g. A1"/></td>'
           + '<td style="color:var(--fg3);">' + esc(u.type) + '</td>'
           + '<td><input class="inline-edit" style="max-width:80px;" value="' + esc(u.floor) + '" onchange="previewUnits[' + i + '].floor=this.value" placeholder="e.g. 1"/></td>'
-          + '<td><span class="badge badge-vacant">Vacant</span></td>'
+          + '<td style="text-align:center;"><label style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:11px;color:var(--fg3);">'
+          + '<input type="checkbox" ' + (u.is_occupied ? 'checked' : '') + ' onchange="previewUnits[' + i + '].is_occupied=this.checked" style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold);"/>'
+          + 'Occupied</label></td>'
           + '</tr>'
       }).join('')
+    }
+
+    function markAllOccupied(val) {
+      previewUnits.forEach(function(u) { u.is_occupied = val })
+      renderPreview()
     }
 
     document.getElementById('step3Back').onclick = function() { showStep(2) }
@@ -497,13 +509,14 @@
       btn.classList.add('loading')
       btn.disabled = true
 
-      var rows = previewUnits.map(function(u) {
+      var rows = previewUnits.map(function(u, idx) {
         return {
           property_id: selectedProperty.id,
-          unit_number: u.number || ('Unit ' + (previewUnits.indexOf(u) + 1)),
+          unit_number: u.number || ('Unit ' + (idx + 1)),
           unit_type: u.type,
           floor: u.floor || null,
-          status: 'vacant'
+          status: u.is_occupied ? 'rented' : 'available',
+          availability_status: u.is_occupied ? 'occupied' : 'vacant'
         }
       })
 
@@ -516,8 +529,11 @@
         return
       }
 
+      var occupied = rows.filter(function(r) { return r.status === 'rented' }).length
+      var vacant = rows.length - occupied
       document.getElementById('doneMsg').textContent =
-        rows.length + ' unit' + (rows.length === 1 ? '' : 's') + ' created for ' + selectedProperty.name + '. You can now assign tenants in Asilia Homes.'
+        rows.length + ' unit' + (rows.length === 1 ? '' : 's') + ' created for ' + selectedProperty.name + '.'
+        + (occupied ? ' ' + occupied + ' occupied,' : '') + ' ' + vacant + ' vacant.'
 
       showStep(4)
     }
